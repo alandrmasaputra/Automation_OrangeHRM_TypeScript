@@ -9,5 +9,5 @@
     "resolveJsonModule": true,
     "skipLibCheck": true
   },
-  "include": ["tests", "pages", "fixtures", "playwright.config.ts"]
+  "include": ["tests", "pages", "fixtures", "playwright.config.ts", "expected-text-data"]
 }
