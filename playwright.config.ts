@@ -8,7 +8,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [['list'], ['html', { outputFolder: reportFolder}]],
+  reporter: [['list'], ['html', { outputFolder: reportFolder }]],
   use: {
     baseURL: 'https://opensource-demo.orangehrmlive.com/web/index.php/auth/login',
     trace: 'on-first-retry',
@@ -18,12 +18,14 @@ export default defineConfig({
     },
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'],
-        deviceScaleFactor: undefined, 
+    {
+      name: 'chromium', use: {
+        ...devices['Desktop Chrome'],
+        deviceScaleFactor: undefined,
         headless: false,
         viewport: null,
         launchOptions: { args: ['--start-maximized'], },
-        } 
+      }
     },
     // { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     // { name: 'firefox', use: { ...devices['Desktop Firefox'] } },

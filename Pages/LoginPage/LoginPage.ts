@@ -35,13 +35,13 @@ export class LoginPage {
     await this.submitButton.click();
   }
 
-  async forgotPassword(username: string){
+  async forgotPassword(username: string) {
     await this.forgotPasswordButton.click();
     await this.username.fill(username);
     await this.resetPasswordButton.click();
   }
 
-  async cancelForgotPassword(){
+  async cancelForgotPassword() {
     await this.forgotPasswordButton.click();
     await this.cancelButton.click();
     await expect(this.page).toHaveURL(/login/);

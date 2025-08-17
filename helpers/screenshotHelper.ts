@@ -10,8 +10,7 @@ export async function takeNamedScreenshot(page: Page, testInfo: TestInfo) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const fileName = `${safeTestName}_${timestamp}.png`;
 
-  // Folder data dalam playwright-report (HTML reporter bawaan)
-  const dataDir = path.join( reportFolder , 'Screenshot');
+  const dataDir = path.join(reportFolder, 'Screenshot');
   fs.mkdirSync(dataDir, { recursive: true });
 
   const screenshotPath = path.join(dataDir, fileName);
