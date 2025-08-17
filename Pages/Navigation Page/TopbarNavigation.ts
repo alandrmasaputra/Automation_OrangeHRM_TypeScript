@@ -12,6 +12,8 @@ export class TopbarNavigation extends BaseHelpers {
   readonly supportPage: Locator;
   readonly updatePassword: Locator;
   readonly supportPageText: Locator;
+  readonly upgradeButton: Locator;
+  readonly upgradePage: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -25,6 +27,8 @@ export class TopbarNavigation extends BaseHelpers {
     this.supportPage = page.locator('p:has-text("Customer Support")');
     this.updatePassword = page.locator('form.oxd-form');
     this.supportPageText = page.locator('div.orangehrm-card-container');
+    this.upgradeButton = page.locator('a.orangehrm-upgrade-link');
+    this.upgradePage = page.locator('div.form-ohrm');
   }
 
   async clickLogout() {
@@ -53,33 +57,41 @@ export class TopbarNavigation extends BaseHelpers {
     await expect(this.updatePassword).toBeVisible();
   }
 
-  async validateChangePasswordFormText(testInfo: TestInfo, ){
+  async clickUpgradeButton(testInfo: TestInfo) {
+    await this.validateNewTab(() => this.upgradeButton.click(), testInfo, {
+      expectedUrl: /upgrade-to-advanced/,
+      expectedLocator: this.upgradePage,
+      screenshotName: "UpgradeTab"
+    });
+  }
+
+  async validateChangePasswordFormText(testInfo: TestInfo,) {
     const formText = await this.getTexts(this.updatePassword);
     await this.attachTextsWithExpected(
       this.updatePassword,
       testInfo,
       'Change Password Form Validation',
-        ExpectedTextChangePasswordForm
+      ExpectedTextChangePasswordForm
     );
   }
 
-  async validateSupportPageText(testInfo: TestInfo){
+  async validateSupportPageText(testInfo: TestInfo) {
     const supportPageCopy = await this.getTexts(this.supportPageText);
     await this.attachTextsWithExpected(
       this.supportPageText,
       testInfo,
       'Support Page Text Validation',
-        ExpectedTextSupportPage
+      ExpectedTextSupportPage
     );
   }
 
-  async validateAboutPopupText(testInfo: TestInfo){
+  async validateAboutPopupText(testInfo: TestInfo) {
     const boutPopupText = await this.getTexts(this.aboutPopUp);
-    await this.attachTextsWithExpected(
+    await this.attachTextsWithExpectedDynamicNumber(
       this.aboutPopUp,
       testInfo,
       'Support Page Text Validation',
-        ExpectedTextAboutPopup
+      ExpectedTextAboutPopup
     );
   }
 }

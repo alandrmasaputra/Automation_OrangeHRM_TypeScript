@@ -4,10 +4,10 @@ export const ExpectedTextChangePasswordForm = [
   'Password',
   'Current Password',
   'Confirm Password',
-  'Error',
+  'Cancel',
   '* Required',
   'For a strong password, please use a hard to guess combination of text with upper and lower case characters, symbols and numbers',
-  'save',
+  'Save',
 ];
 
 export const ExpectedTextSupportPage = [
@@ -21,10 +21,12 @@ export const ExpectedTextSupportPage = [
 export const ExpectedTextAboutPopup = [
   'About',
   'Company Name:',
-  'Azectra Technologies',
+  '×',
+  'OrangeHRM',
   'Version:',
   'OrangeHRM OS 5.7',
   'Active Employees:',
+  '{number}',
   'Employees Terminated:',
-  '×'
+  '{number}'
 ];
