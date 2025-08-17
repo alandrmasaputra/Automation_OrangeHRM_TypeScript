@@ -1,5 +1,5 @@
-import { test } from '../global-setup';
-import { LoginPage } from '../POM/LoginPage';
+import { test } from '../../global-setup';
+import { LoginPage } from '../../Pages/LoginPage/LoginPage';
 
 test('Invalid Login', async ({ page }) => {
   const login = new LoginPage(page);
