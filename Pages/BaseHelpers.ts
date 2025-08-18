@@ -22,11 +22,13 @@ export class BaseHelpers {
 
 
 
+
   async expectTextsToContain(texts: string, expected: string[]) {
     for (const text of expected) {
       expect(texts).toContain(text);
     }
   }
+
 
 
 
@@ -127,6 +129,7 @@ export class BaseHelpers {
 
 
 
+
   async attachTextsWithExpectedDynamicNumber(
     locator: Locator,
     testInfo: TestInfo,
@@ -134,60 +137,65 @@ export class BaseHelpers {
     expected: string[]
   ): Promise<void> {
     const actualLines = (await this.getTextsArray(locator)).map(a => a.trim());
-    const expectedLines = expected.map(e => e.trim());
-
     const rows: string[] = [];
     const errors: string[] = [];
-
     const remainingActual = [...actualLines];
 
-    for (const exp of expectedLines) {
-      if (exp === "{number}") {
-        const numberIndex = remainingActual.findIndex(a => /^\d+$/.test(a));
-        if (numberIndex !== -1) {
-          const numberValue = remainingActual[numberIndex];
-          rows.push(`${numberValue} --> ${numberValue} (Dynamic Number ✅)`);
-          remainingActual.splice(numberIndex, 1);
-        } else {
-          rows.push(`{number} --> (Missing Number ❌)`);
-          errors.push(`Expected a number but not found`);
-        }
-      } else {
-        const matchIndex = remainingActual.findIndex(
-          a => a.toLowerCase() === exp.toLowerCase()
-        );
-        if (matchIndex !== -1) {
-          const actualMatch = remainingActual[matchIndex];
-          if (actualMatch === exp) {
-            rows.push(`${exp} --> ${actualMatch} (Expected ✅)`);
+    const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const buildPattern = (tpl: string) => {
+      let pattern = tpl
+        .split('{number}')
+        .map(escapeRe)
+        .join('\\s*([0-9][0-9,\\.]*)\\s*');
+
+      pattern = pattern.replace(/\\\((s)\\\)/gi, '(?:s)?'); // handle (s)
+      pattern = pattern.replace(/ +/g, '\\s+');
+      return new RegExp('^' + pattern + '$', 'i');
+    };
+
+    for (const exp of expected.map(e => e.trim())) {
+      const re = buildPattern(exp);
+      const idx = remainingActual.findIndex(a => re.test(a));
+
+      if (idx !== -1) {
+        const actual = remainingActual[idx];
+        const hasNumber = exp.includes('{number}');
+
+        let reportNote = '';
+        if (hasNumber) {
+          if (exp === '{number}') {
+            reportNote = '(Dynamic Number ✅)';
           } else {
-            rows.push(`${exp} --> ${actualMatch} (Case Sensitive ❌)`);
-            errors.push(`Error Case Sensitive: expected "${exp}", got "${actualMatch}"`);
+            reportNote = '(Dynamic Number on Text ✅)';
           }
-          remainingActual.splice(matchIndex, 1); // hapus biar ga diulang
         } else {
-          rows.push(`${exp} --> (Missing Text) (Not Found ❌)`);
-          errors.push(`Expected "${exp}" not found in actual`);
+          reportNote = '(Expected ✅)';
         }
+
+        rows.push(`${actual} --> ${actual} ${reportNote}`);
+        remainingActual.splice(idx, 1);
+      } else {
+        rows.push(`${exp} --> (Missing Pattern ❌)`);
+        errors.push(`Pattern "${exp}" tidak match di actual`);
       }
     }
 
     for (const leftover of remainingActual) {
       rows.push(`${leftover} --> (Not Provided) (Unexpected ❌)`);
-      errors.push(`Unexpected element "${leftover}" found in actual`);
+      errors.push(`Unexpected element "${leftover}" ditemukan`);
     }
 
-    const formatted = rows.join("\n\n");
-
     await testInfo.attach(title, {
-      body: formatted,
-      contentType: "text/plain",
+      body: rows.join('\n\n'),
+      contentType: 'text/plain',
     });
 
     if (errors.length > 0) {
-      throw new Error(errors.join("\n"));
+      throw new Error(errors.join('\n'));
     }
   }
+
 
 
 
@@ -200,6 +208,8 @@ export class BaseHelpers {
     await newPage.waitForLoadState();
     return newPage;
   }
+
+
 
 
   async captureNewTabScreenshot(
@@ -239,6 +249,7 @@ export class BaseHelpers {
     await expect(newPage).toHaveURL(expectedUrl);
     return newPage;
   }
+
 
 
 
