@@ -66,7 +66,7 @@ export class TopbarNavigation extends BaseHelpers {
   }
 
   async validateChangePasswordFormText(testInfo: TestInfo,) {
-    const formText = await this.getTexts(this.updatePassword);
+    await expect(this.updatePassword).toBeVisible;
     await this.attachTextsWithExpected(
       this.updatePassword,
       testInfo,
@@ -76,7 +76,7 @@ export class TopbarNavigation extends BaseHelpers {
   }
 
   async validateSupportPageText(testInfo: TestInfo) {
-    const supportPageCopy = await this.getTexts(this.supportPageText);
+    await expect(this.supportPageText).toBeVisible;
     await this.attachTextsWithExpected(
       this.supportPageText,
       testInfo,
@@ -86,11 +86,11 @@ export class TopbarNavigation extends BaseHelpers {
   }
 
   async validateAboutPopupText(testInfo: TestInfo) {
-    const boutPopupText = await this.getTexts(this.aboutPopUp);
+    await expect(this.aboutPopUp).toBeVisible;
     await this.attachTextsWithExpectedDynamicNumber(
       this.aboutPopUp,
       testInfo,
-      'Support Page Text Validation',
+      'About Popup Text Validation',
       ExpectedTextAboutPopup
     );
   }

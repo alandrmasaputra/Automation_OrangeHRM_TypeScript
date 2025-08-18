@@ -1,11 +1,13 @@
 import { test } from '../../global-setup';
 import { LoginPage } from '../../Pages/LoginPage/LoginPage';
-import { AdminPage } from '../../Pages/Admin Page/AdminPage';
+import { UserManagement } from '../../Pages/Admin Page/UserManagement';
 
 test('Test Dynamic Number', async ({ page }, testInfo) => {
-  const adminPage = new AdminPage(page);
+  const userManagement = new UserManagement(page);
   const login = new LoginPage(page);
   await login.goto();
   await login.login('Admin', 'admin123');
-  await adminPage.checkDynamicNumber(testInfo);
+  await userManagement.goToAdminPage();
+  await userManagement.validateFilter(testInfo);
+  await userManagement.validateTable(testInfo);
 });

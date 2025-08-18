@@ -3,9 +3,30 @@ import { expect, type Page, type Locator, type TestInfo } from '@playwright/test
 export class BaseHelpers {
   constructor(protected readonly page: Page) { }
 
-  // Ambil hasil sebagai array per elemen (lebih aman untuk perbandingan expected)
   async getTextsArray(locator: Locator): Promise<string[]> {
-    const segments: string[] = await locator.allInnerTexts();
+    const segments: string[] = [];
+
+    const count = await locator.count();
+    for (let i = 0; i < count; i++) {
+      const el = locator.nth(i);
+
+      // Get innerText from Container
+      const text = (await el.innerText()).trim();
+      if (text) {
+        segments.push(text);
+      }
+
+      // get text from element with placeholder attribute
+      const withPlaceholder = el.locator('[placeholder]');
+      const placeholderCount = await withPlaceholder.count();
+      for (let j = 0; j < placeholderCount; j++) {
+        const placeholder = await withPlaceholder.nth(j).getAttribute("placeholder");
+        if (placeholder) {
+          segments.push(placeholder.trim());
+        }
+      }
+    }
+
     return segments
       .flatMap(s => s.split(/\r?\n/))
       .map(s => s.trim())
@@ -14,7 +35,7 @@ export class BaseHelpers {
 
 
 
-  // Ambil hasil sebagai string gabungan (dipakai untuk attach biasa)
+  // Take the result as a concatenated string (used for normal attachment)
   async getTexts(locator: Locator): Promise<string> {
     const arr = await this.getTextsArray(locator);
     return arr.join('\n\n');
@@ -40,35 +61,6 @@ export class BaseHelpers {
     });
   }
 
-
-
-  // this function need to combine with expectTextToContain
-  async attachTextsWithDetail(
-    locator: Locator,
-    testInfo: TestInfo,
-    title: string,
-    expected: string[]
-  ): Promise<void> {
-    const actualLines = await this.getTextsArray(locator);
-    const maxLen = Math.max(actualLines.length, expected.length);
-
-    const formatted = Array.from({ length: maxLen }, (_, i) => {
-      const actual = actualLines[i] ?? '(Missing Element)';
-      const exp = expected[i] ?? '(Not provided)';
-
-      if (actual === exp) {
-        return `${exp} --> ${actual} (Expected ✅)`;
-      } else {
-        return `${exp} --> ${actual} (Not Expected ❌)`;
-      }
-
-    }).join('\n\n');
-
-    await testInfo.attach(title, {
-      body: formatted,
-      contentType: 'text/plain',
-    });
-  }
 
 
 
@@ -177,13 +169,91 @@ export class BaseHelpers {
         remainingActual.splice(idx, 1);
       } else {
         rows.push(`${exp} --> (Missing Pattern ❌)`);
-        errors.push(`Pattern "${exp}" tidak match di actual`);
+        errors.push(`Pattern "${exp}" not found in actual`);
       }
     }
 
     for (const leftover of remainingActual) {
       rows.push(`${leftover} --> (Not Provided) (Unexpected ❌)`);
-      errors.push(`Unexpected element "${leftover}" ditemukan`);
+      errors.push(`Unexpected element "${leftover}" found in actual`);
+    }
+
+    await testInfo.attach(title, {
+      body: rows.join('\n\n'),
+      contentType: 'text/plain',
+    });
+
+    if (errors.length > 0) {
+      throw new Error(errors.join('\n'));
+    }
+  }
+
+
+
+
+  async attachTextsWithMultipleLocator(
+    locators: Locator[] | Locator,
+    testInfo: TestInfo,
+    title: string,
+    expected: string[]
+  ): Promise<void> {
+    const rows: string[] = [];
+    const errors: string[] = [];
+
+    // normalize biar tetap array
+    const locatorList = Array.isArray(locators) ? locators : [locators];
+
+    let actualLines: string[] = [];
+    for (const loc of locatorList) {
+      const texts = await this.getTextsArray(loc);
+      actualLines.push(...texts.map(a => a.trim()));
+    }
+
+    const remainingActual = [...actualLines];
+
+    const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const buildPattern = (tpl: string) => {
+      let pattern = tpl
+        .split('{number}')
+        .map(escapeRe)
+        .join('\\s*([0-9][0-9,\\.]*)\\s*');
+
+      pattern = pattern.replace(/\\\((s)\\\)/gi, '(?:s)?');
+      pattern = pattern.replace(/ +/g, '\\s+');
+      return new RegExp('^' + pattern + '$', 'i');
+    };
+
+    for (const exp of expected.map(e => e.trim())) {
+      const re = buildPattern(exp);
+      const idx = remainingActual.findIndex(a => re.test(a));
+
+      if (idx !== -1) {
+        const actual = remainingActual[idx];
+        const hasNumber = exp.includes('{number}');
+
+        let reportNote = '';
+        if (hasNumber) {
+          if (exp === '{number}') {
+            reportNote = '(Dynamic Number ✅)';
+          } else {
+            reportNote = '(Dynamic Number on Text ✅)';
+          }
+        } else {
+          reportNote = '(Expected ✅)';
+        }
+
+        rows.push(`${actual} --> ${actual} ${reportNote}`);
+        remainingActual.splice(idx, 1);
+      } else {
+        rows.push(`${exp} --> (Missing Pattern ❌)`);
+        errors.push(`Pattern "${exp}" not found in actual`);
+      }
+    }
+
+    for (const leftover of remainingActual) {
+      rows.push(`${leftover} --> (Not Provided) (Unexpected ❌)`);
+      errors.push(`Unexpected element "${leftover}" found in actual`);
     }
 
     await testInfo.attach(title, {
