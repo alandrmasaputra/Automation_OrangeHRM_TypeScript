@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
+import { step } from '../../helpers/stepHelper';
 import { BaseHelpers } from '../BaseHelpers';
 import { ExpectedTextFilter, ExpectedTextTable } from '../../expected-text-data/Admin Page/UserManagement';
 
@@ -22,28 +23,42 @@ export class UserManagement extends BaseHelpers {
   }
 
   async goToAdminPage() {
-    await this.adminPageNavigation.click();
+    await step('Go to Admin Page', async () => {
+      await this.adminPageNavigation.click();
+    })
   }
 
   async validateFilter(testInfo: TestInfo) {
-    await expect(this.userManagementFilter).toBeVisible();
-    await this.attachTextsWithExpected(
-      this.userManagementFilter,
-      testInfo,
-      'User Management Filter',
-      ExpectedTextFilter
-    )
+    await step('Validate User Management Filter', async () => {
+      await expect(this.userManagementFilter).toBeVisible();
+      await this.attachTextWithExpectedOnCSV(
+        this.userManagementFilter,
+        testInfo,
+        'User Management Filter',
+        'expected-text-data/Admin Page/Admin Page - UserManagement.csv',
+        'English' // ('English' or 'Indonesian')
+      )
+    })
   }
 
   async validateTable(testInfo: TestInfo) {
-    await expect(this.userManagementTableRow).toBeVisible();
-    await expect(this.userManagementTableAdd).toBeVisible();
-    await expect(this.userManagementDynamicNumber).toBeVisible();
-    await this.attachTextsWithMultipleLocator(
-      [this.userManagementTableAdd, this.userManagementTableRow, this.userManagementDynamicNumber],
-      testInfo,
-      'User Management Table',
-      ExpectedTextTable
-    )
+    await step('Validate User Management Table', async () => {
+      await this.expectAllVisible([
+        this.userManagementDynamicNumber,
+        this.userManagementTableAdd,
+        this.userManagementTableRow
+      ])
+      await this.attachTextWithExpectedOnExcel([
+        this.userManagementDynamicNumber,
+        this.userManagementTableAdd,
+        this.userManagementTableRow
+      ],
+        testInfo,
+        'User Management Table',
+        'expected-text-data/Admin Page/Admin Page.xlsx',
+        'UserManagementTable',
+        'English'
+      )
+    })
   }
 }
