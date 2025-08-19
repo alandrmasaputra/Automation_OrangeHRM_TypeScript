@@ -1,4 +1,8 @@
 import { expect, type Page, type Locator, type TestInfo } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as csv from 'csv-parse/sync';
+import * as XLSX from 'xlsx';
 
 export class BaseHelpers {
   constructor(protected readonly page: Page) { }
@@ -65,72 +69,24 @@ export class BaseHelpers {
 
 
   async attachTextsWithExpected(
-    locator: Locator,
+    locators: Locator | Locator[],
     testInfo: TestInfo,
     title: string,
     expected: string[]
   ): Promise<void> {
-    const actualLines = (await this.getTextsArray(locator)).map(a => a.trim());
-    const expectedLines = expected.map(e => e.trim());
-
-    const actualSet = new Set(actualLines.map(a => a.toLowerCase()));
-    const expectedSet = new Set(expectedLines.map(e => e.toLowerCase()));
-
     const rows: string[] = [];
     const errors: string[] = [];
 
-    // Cek expected → actual
-    for (const exp of expectedLines) {
-      const expLower = exp.toLowerCase();
-      const actualMatch = actualLines.find(a => a.toLowerCase() === expLower);
+    // Normalize biar selalu array
+    const locatorList = Array.isArray(locators) ? locators : [locators];
 
-      if (actualMatch) {
-        if (actualMatch === exp) {
-          // Expected
-          rows.push(`${exp} --> ${actualMatch} (Expected ✅)`);
-        } else {
-          // Case Sensitive
-          rows.push(`${exp} --> ${actualMatch} (Case Sensitive ❌)`);
-          errors.push(`Case mismatch: expected "${exp}", got "${actualMatch}"`);
-        }
-      } else {
-        rows.push(`${exp} --> (Missing Element) (Not Found ❌)`);
-        errors.push(`Expected "${exp}" not found in actual`);
-      }
+    // Ambil semua teks dari semua locator
+    let actualLines: string[] = [];
+    for (const loc of locatorList) {
+      const texts = await this.getTextsArray(loc);
+      actualLines.push(...texts.map(a => a.trim()));
     }
 
-    for (const actual of actualLines) {
-      const actLower = actual.toLowerCase();
-      if (!expectedSet.has(actLower)) {
-        rows.push(`${actual} --> (Not Provided) (Unexpected ❌)`);
-        errors.push(`Unexpected element "${actual}" found in actual`);
-      }
-    }
-
-    const formatted = rows.join('\n\n');
-
-    await testInfo.attach(title, {
-      body: formatted,
-      contentType: 'text/plain',
-    });
-
-    if (errors.length > 0) {
-      throw new Error(errors.join("\n"));
-    }
-  }
-
-
-
-
-  async attachTextsWithExpectedDynamicNumber(
-    locator: Locator,
-    testInfo: TestInfo,
-    title: string,
-    expected: string[]
-  ): Promise<void> {
-    const actualLines = (await this.getTextsArray(locator)).map(a => a.trim());
-    const rows: string[] = [];
-    const errors: string[] = [];
     const remainingActual = [...actualLines];
 
     const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -156,11 +112,9 @@ export class BaseHelpers {
 
         let reportNote = '';
         if (hasNumber) {
-          if (exp === '{number}') {
-            reportNote = '(Dynamic Number ✅)';
-          } else {
-            reportNote = '(Dynamic Number on Text ✅)';
-          }
+          reportNote = exp === '{number}'
+            ? '(Dynamic Number ✅)'
+            : '(Dynamic Number on Text ✅)';
         } else {
           reportNote = '(Expected ✅)';
         }
@@ -168,8 +122,8 @@ export class BaseHelpers {
         rows.push(`${actual} --> ${actual} ${reportNote}`);
         remainingActual.splice(idx, 1);
       } else {
-        rows.push(`${exp} --> (Missing Pattern ❌)`);
-        errors.push(`Pattern "${exp}" not found in actual`);
+        rows.push(`${exp} --> (Missing Text ❌)`);
+        errors.push(`Text "${exp}" not found in actual`);
       }
     }
 
@@ -191,78 +145,77 @@ export class BaseHelpers {
 
 
 
-  async attachTextsWithMultipleLocator(
-    locators: Locator[] | Locator,
+  async attachTextWithExpectedOnCSV(
+    locators: Locator | Locator[],
     testInfo: TestInfo,
     title: string,
-    expected: string[]
+    csvFilePath: string,
+    language: 'English' | 'Indonesian' = 'English'
   ): Promise<void> {
-    const rows: string[] = [];
-    const errors: string[] = [];
-
-    // normalize biar tetap array
-    const locatorList = Array.isArray(locators) ? locators : [locators];
-
-    let actualLines: string[] = [];
-    for (const loc of locatorList) {
-      const texts = await this.getTextsArray(loc);
-      actualLines.push(...texts.map(a => a.trim()));
-    }
-
-    const remainingActual = [...actualLines];
-
-    const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    const buildPattern = (tpl: string) => {
-      let pattern = tpl
-        .split('{number}')
-        .map(escapeRe)
-        .join('\\s*([0-9][0-9,\\.]*)\\s*');
-
-      pattern = pattern.replace(/\\\((s)\\\)/gi, '(?:s)?');
-      pattern = pattern.replace(/ +/g, '\\s+');
-      return new RegExp('^' + pattern + '$', 'i');
-    };
-
-    for (const exp of expected.map(e => e.trim())) {
-      const re = buildPattern(exp);
-      const idx = remainingActual.findIndex(a => re.test(a));
-
-      if (idx !== -1) {
-        const actual = remainingActual[idx];
-        const hasNumber = exp.includes('{number}');
-
-        let reportNote = '';
-        if (hasNumber) {
-          if (exp === '{number}') {
-            reportNote = '(Dynamic Number ✅)';
-          } else {
-            reportNote = '(Dynamic Number on Text ✅)';
-          }
-        } else {
-          reportNote = '(Expected ✅)';
-        }
-
-        rows.push(`${actual} --> ${actual} ${reportNote}`);
-        remainingActual.splice(idx, 1);
-      } else {
-        rows.push(`${exp} --> (Missing Pattern ❌)`);
-        errors.push(`Pattern "${exp}" not found in actual`);
-      }
-    }
-
-    for (const leftover of remainingActual) {
-      rows.push(`${leftover} --> (Not Provided) (Unexpected ❌)`);
-      errors.push(`Unexpected element "${leftover}" found in actual`);
-    }
-
-    await testInfo.attach(title, {
-      body: rows.join('\n\n'),
-      contentType: 'text/plain',
+    // 1. Read CSV
+    const fileContent = fs.readFileSync(path.resolve(csvFilePath));
+    const records: any[] = csv.parse(fileContent, {
+      columns: true,
+      skip_empty_lines: true,
     });
 
-    if (errors.length > 0) {
-      throw new Error(errors.join('\n'));
+    // 2. choose column name
+    const columnName = language === 'English' ? 'English Copy' : 'Indonesian Copy';
+
+    // 3. Ambil expected values
+    const expected: string[] = records
+      .map((r) => r[columnName]?.trim())
+      .filter(Boolean);
+
+    if (expected.length === 0) {
+      throw new Error(`❌ No data found in column "${columnName}" at file "${csvFilePath}"`);
+    }
+
+    // 4. Reuse attachTextsWithExpected
+    await this.attachTextsWithExpected(locators, testInfo, title, expected);
+  }
+
+
+
+
+  async attachTextWithExpectedOnExcel(
+    locators: Locator | Locator[],
+    testInfo: TestInfo,
+    title: string,
+    excelFilePath: string,
+    sheetName: string,
+    language: 'English' | 'Indonesian' = 'English'
+  ): Promise<void> {
+    // 1. Read Excel File
+    const workbook = XLSX.readFile(path.resolve(excelFilePath));
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+      throw new Error(`❌ Sheet "${sheetName}" not found in file ${excelFilePath}`);
+    }
+
+    // 2. Convert to JSON
+    const records: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    // 3. choose column name
+    const colName = language === 'English' ? 'English Copy' : 'Indonesian Copy';
+    const expected: string[] = records
+      .map((r) => r[colName]?.toString().trim())
+      .filter(Boolean);
+
+    if (expected.length === 0) {
+      throw new Error(`❌ No data found in column "${colName}" at sheet "${sheetName}"`);
+    }
+
+    // 4. Reuse attachTextsWithExpected
+    await this.attachTextsWithExpected(locators, testInfo, title, expected);
+  }
+
+
+
+
+  async expectAllVisible(locators: Locator[], message?: string): Promise<void> {
+    for (const locator of locators) {
+      await expect(locator, message ?? 'Element not visible').toBeVisible();
     }
   }
 

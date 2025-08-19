@@ -1,7 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { step } from '../../helpers/stepHelper';
+import { BaseHelpers } from '../BaseHelpers';
 
-export class LoginPage {
-  readonly page: Page;
+export class LoginPage extends BaseHelpers {
   readonly username: Locator;
   readonly password: Locator;
   readonly submitButton: Locator;
@@ -13,7 +14,8 @@ export class LoginPage {
   readonly validateSuccessResetPassword: Locator;
 
   constructor(page: Page) {
-    this.page = page;
+    super(page);
+
     this.username = page.locator('input[name="username"]');
     this.password = page.locator('input[name="password"]');
     this.submitButton = page.locator('button[type="submit"]');
@@ -26,13 +28,17 @@ export class LoginPage {
   }
 
   async goto() {
-    await this.page.goto('/');
+    await step('Navigate to Login Page', async () => {
+      await this.page.goto('/');
+    })
   }
 
   async login(username: string, password: string) {
-    await this.username.fill(username);
-    await this.password.fill(password);
-    await this.submitButton.click();
+    await step('Input Username, Password and Click login', async () => {
+      await this.username.fill(username);
+      await this.password.fill(password);
+      await this.submitButton.click();
+    })
   }
 
   async forgotPassword(username: string) {

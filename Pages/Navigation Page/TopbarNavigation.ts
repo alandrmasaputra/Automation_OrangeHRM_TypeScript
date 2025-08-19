@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 import { BaseHelpers } from '../BaseHelpers';
+import { step } from '../../helpers/stepHelper';
 import { ExpectedTextSupportPage, ExpectedTextChangePasswordForm, ExpectedTextAboutPopup } from '../../expected-text-data/Topbar Navigation/TextProfileMenu';
 
 export class TopbarNavigation extends BaseHelpers {
@@ -32,66 +33,79 @@ export class TopbarNavigation extends BaseHelpers {
   }
 
   async clickLogout() {
-    await this.profileBottomsheet.click();
-    await this.logoutButton.click();
-    await expect(this.page).toHaveURL(/login/);
+    await step('Click Logout on Profile Bottomsheet', async () => {
+      await this.profileBottomsheet.click();
+      await this.logoutButton.click();
+      await expect(this.page).toHaveURL(/login/);
+    })
   }
 
   async clickAbout() {
-    await this.profileBottomsheet.click();
-    await this.aboutButton.click();
-    await expect(this.aboutPopUp).toBeVisible();
+    await step('Click About on Profile Bottomsheet', async () => {
+      await this.profileBottomsheet.click();
+      await this.aboutButton.click();
+    })
   }
 
   async clickSupport() {
-    await this.profileBottomsheet.click();
-    await this.supportButton.click();
-    await expect(this.page).toHaveURL(/support/);
-    await expect(this.supportPageText).toBeVisible();
+    await step('Click Support on Profile Bottomsheet', async () => {
+      await this.profileBottomsheet.click();
+      await this.supportButton.click();
+    })
   }
 
   async clickChangePassword() {
-    await this.profileBottomsheet.click();
-    await this.changePasswordButton.click();
-    await expect(this.page).toHaveURL(/updatePassword/);
-    await expect(this.updatePassword).toBeVisible();
+    await step('Click change password on Profile Bottomsheet', async () => {
+      await this.profileBottomsheet.click();
+      await this.changePasswordButton.click();
+    })
   }
 
   async clickUpgradeButton(testInfo: TestInfo) {
-    await this.validateNewTab(() => this.upgradeButton.click(), testInfo, {
-      expectedUrl: /upgrade-to-advanced/,
-      expectedLocator: this.upgradePage,
-      screenshotName: "UpgradeTab"
-    });
+    await step('Click Upgrade Button', async () => {
+      await this.validateNewTab(() => this.upgradeButton.click(), testInfo, {
+        expectedUrl: /upgrade-to-advanced/,
+        expectedLocator: this.upgradePage,
+        screenshotName: "UpgradeTab"
+      });
+    })
   }
 
   async validateChangePasswordFormText(testInfo: TestInfo,) {
-    await expect(this.updatePassword).toBeVisible;
-    await this.attachTextsWithExpected(
-      this.updatePassword,
-      testInfo,
-      'Change Password Form Validation',
-      ExpectedTextChangePasswordForm
-    );
+    await step('Click change password on Profile Bottomsheet', async () => {
+      await expect(this.page).toHaveURL(/updatePassword/);
+      await expect(this.updatePassword).toBeVisible();
+      await this.attachTextsWithExpected(
+        this.updatePassword,
+        testInfo,
+        'Change Password Form Validation',
+        ExpectedTextChangePasswordForm
+      );
+    })
   }
 
   async validateSupportPageText(testInfo: TestInfo) {
-    await expect(this.supportPageText).toBeVisible;
-    await this.attachTextsWithExpected(
-      this.supportPageText,
-      testInfo,
-      'Support Page Text Validation',
-      ExpectedTextSupportPage
-    );
+    await step('Validate Support Page', async () => {
+      await expect(this.page).toHaveURL(/support/);
+      await expect(this.supportPageText).toBeVisible();
+      await this.attachTextsWithExpected(
+        this.supportPageText,
+        testInfo,
+        'Support Page Text Validation',
+        ExpectedTextSupportPage
+      );
+    })
   }
 
   async validateAboutPopupText(testInfo: TestInfo) {
-    await expect(this.aboutPopUp).toBeVisible;
-    await this.attachTextsWithExpectedDynamicNumber(
-      this.aboutPopUp,
-      testInfo,
-      'About Popup Text Validation',
-      ExpectedTextAboutPopup
-    );
+    await step('Validate About Popup', async () => {
+      await expect(this.aboutPopUp).toBeVisible();
+      await this.attachTextsWithExpected(
+        this.aboutPopUp,
+        testInfo,
+        'About Popup Text Validation',
+        ExpectedTextAboutPopup
+      );
+    })
   }
 }
