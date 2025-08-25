@@ -57,6 +57,22 @@ export class BaseHelpers {
 
 
 
+  async expectTextsNotToContain(texts: string, expected: string) {
+    expect(texts).not.toContain(expected);
+  }
+
+
+
+
+  async expectTextsNotToContainMultiple(texts: string, expected: string | string[]) {
+    for (const text of expected) {
+      expect(texts).not.toContain(text);
+    }
+  }
+
+
+
+
   async attachTexts(locator: Locator, testInfo: TestInfo, title: string): Promise<void> {
     const formatted = await this.getTexts(locator);
     await testInfo.attach(title, {
