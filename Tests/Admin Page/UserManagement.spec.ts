@@ -54,35 +54,47 @@ test('Reset filter test', async ({ page }) => {
   });
 });
 
-// test('Delete by checkbox', async ({ page }) => {
-//   const userManagement = new UserManagement(page);
-//   const login = new LoginPage(page);
+test('Change name and passowrd', async ({ page }) => {
+  const userManagement = new UserManagement(page);
+  const login = new LoginPage(page);
 
-//   await login.goto();
-//   await login.login('Admin', 'admin123');
-//   await userManagement.goToAdminPage();
-//   await userManagement.deletebyCheckbox('abdullahashfaq97');
-//   await userManagement.validateDeleteUser('abdullahashfaq97');
-// })
+  await login.goto();
+  await login.login('Admin', 'admin123');
+  await userManagement.goToAdminPage();
 
-// test('Delete by Icon', async ({ page }, testInfo) => {
-//   const userManagement = new UserManagement(page);
-//   const login = new LoginPage(page);
+  await userManagement.changeNameAndPassword('testuser');
+});
 
-//   await login.goto();
-//   await login.login('Admin', 'admin123');
-//   await userManagement.goToAdminPage();
-//   await userManagement.deleteByIcon('testinglan');
-//   await userManagement.validateDeleteUser('testinglan');
-// });
 
-// test('Delete by checkbox multiple', async ({ page }) => {
-//   const userManagement = new UserManagement(page);
-//   const login = new LoginPage(page);
+test('Delete by checkbox', async ({ page }) => {
+  const userManagement = new UserManagement(page);
+  const login = new LoginPage(page);
 
-//   await login.goto();
-//   await login.login('Admin', 'admin123');
-//   await userManagement.goToAdminPage();
-//   await userManagement.deletebyCheckboxMultiple(['Janelle_Murphy', 'kunal033']);
-//   await userManagement.validateDeleteUserMultiple(['Janelle_Murphy', 'kunal033']);
-// })
+  await login.goto();
+  await login.login('Admin', 'admin123');
+  await userManagement.goToAdminPage();
+  await userManagement.deletebyCheckbox('hello');
+  await userManagement.validateDeleteUser('hello');
+})
+
+test('Delete by Icon', async ({ page }, testInfo) => {
+  const userManagement = new UserManagement(page);
+  const login = new LoginPage(page);
+
+  await login.goto();
+  await login.login('Admin', 'admin123');
+  await userManagement.goToAdminPage();
+  await userManagement.deleteByIcon('testinglan');
+  await userManagement.validateDeleteUser('testinglan');
+});
+
+test('Delete by checkbox multiple', async ({ page }) => {
+  const userManagement = new UserManagement(page);
+  const login = new LoginPage(page);
+
+  await login.goto();
+  await login.login('Admin', 'admin123');
+  await userManagement.goToAdminPage();
+  await userManagement.deletebyCheckboxMultiple(['Test1758010445982', 'Test1758010469931']);
+  await userManagement.validateDeleteUserMultiple(['Test1758010445982', 'Test1758010469931']);
+})

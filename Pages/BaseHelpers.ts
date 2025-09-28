@@ -48,9 +48,13 @@ export class BaseHelpers {
 
 
 
-  async expectTextsToContain(texts: string, expected: string[]) {
-    for (const text of expected) {
-      expect(texts).toContain(text);
+  async expectTextsToContain(texts: string, expected: string | string[]) {
+    if (Array.isArray(expected)) {
+      for (const e of expected) {
+        expect(texts).toContain(e);
+      }
+    } else {
+      expect(texts).toContain(expected);
     }
   }
 
@@ -356,5 +360,11 @@ export class BaseHelpers {
     }
 
     return newPage;
+  }
+
+
+
+  async getElementByOrder(locator: Locator, index: number): Promise<void> {
+    await locator.nth(index);
   }
 }
