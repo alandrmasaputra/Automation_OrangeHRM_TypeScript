@@ -2,8 +2,6 @@ import { expect, type Locator, type Page, type TestInfo } from '@playwright/test
 import { step } from '../../helpers/stepHelper';
 import { BaseHelpers } from '../BaseHelpers';
 import { ExpectedTextFilter, ExpectedTextTable } from '../../expected-text-data/Admin Page/UserManagement';
-import { pathToFileURL } from 'url';
-import { error } from 'console';
 
 export class UserManagement extends BaseHelpers {
   readonly adminPageNavigation: Locator;
@@ -33,6 +31,8 @@ export class UserManagement extends BaseHelpers {
   readonly buttonSearch: Locator;
   readonly resetSearch: Locator;
   readonly filterEmployeeName: Locator;
+  readonly changePasswordCheckbox: Locator;
+  readonly successToaster: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -64,6 +64,8 @@ export class UserManagement extends BaseHelpers {
     this.filterEmployeeName = page.locator('input[placeholder="Type for hints..."]');
     this.buttonSearch = page.locator('div.oxd-form-actions button:has-text("Search")');
     this.resetSearch = page.locator('div.oxd-form-actions button:has-text("Reset")');
+    this.changePasswordCheckbox = page.locator('div.oxd-checkbox-wrapper span')
+    this.successToaster = page.locator('div#oxd-toaster_1:has-text("Successfully Updated")');
   }
 
   // Dynamic locator for delete user
@@ -77,6 +79,33 @@ export class UserManagement extends BaseHelpers {
     return this.page.locator(
       `//div[text()="${username}"]/../preceding-sibling::div/div`
     )
+  }
+
+  private editIconbyUsername(username: string): Locator {
+    return this.page.locator(
+      `//div[text()="${username}"]/../following-sibling::div[4]//*[@class="oxd-icon bi-pencil-fill"]`
+    )
+  }
+
+  async clickEditUser(username: string) {
+    await step('click edit user', async () => {
+      await this.editIconbyUsername(username).click();
+      await expect(this.page).toHaveURL(/saveSystemUser/, { timeout: 6000 });
+    })
+  }
+
+  async changeNameAndPassword(username: string) {
+    await step('change employee name and password', async () => {
+      await this.clickEditUser(username);
+      await this.employeeNameForm.fill('Criys Talesia')
+      await this.employeeNameList.click();
+      await this.changePasswordCheckbox.click();
+      await expect(this.passwordForm).toBeVisible();
+      await this.passwordForm.fill('TestingTerus123');
+      await this.confirmPasswordForm.fill('TestingTerus123');
+      await this.clickSaveButton();
+      await expect(this.successToaster).toBeVisible();
+    })
   }
 
   async deleteByIcon(username: string) {
@@ -102,6 +131,7 @@ export class UserManagement extends BaseHelpers {
       await this.statusForm.click();
       await this.listBoxStatusEnabled.click();
       await this.buttonSearch.click();
+      await this.tableList.isVisible({ timeout: 7000 });
     })
   }
 
@@ -174,17 +204,18 @@ export class UserManagement extends BaseHelpers {
   }
 
   async resetFilterAndValidate(
-    expected: string[],
     filterParams: { username: string; employeeName: string }
   ) {
     await step('Reset filter and validate', async () => {
       await this.filterByAllField(filterParams);
+      await expect(this.tableList).toBeVisible({ timeout: 7000 });
       const filterResult = await this.getTexts(this.tableList);
       await this.resetSearch.click();
+      await this.tableList.isVisible({ timeout: 10000 });
       const resetResult = await this.getTexts(this.tableList);
 
       if (filterResult === resetResult) {
-        throw new Error (`❌ Failed to reset result`)
+        throw new Error(`❌ Failed to reset result`)
       }
     })
   }

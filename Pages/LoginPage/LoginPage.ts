@@ -1,6 +1,8 @@
-import { expect, type Locator, type Page } from '@playwright/test';
+import { expect, TestInfo, type Locator, type Page } from '@playwright/test';
 import { step } from '../../helpers/stepHelper';
 import { BaseHelpers } from '../BaseHelpers';
+import { ExpectedSideBarAdmin } from '../../expected-text-data/Sidebar Navigation List/SideBarNavigationAdmin';
+import { ExpectedSideBarESS } from '../../expected-text-data/Sidebar Navigation List/SideBarNavigationESS';
 
 export class LoginPage extends BaseHelpers {
   readonly username: Locator;
@@ -12,6 +14,10 @@ export class LoginPage extends BaseHelpers {
   readonly cancelButton: Locator;
   readonly resetPasswordButton: Locator;
   readonly validateSuccessResetPassword: Locator;
+  readonly validateInvalidLogin: Locator;
+  readonly invalidForgotPasswordError: Locator;
+  readonly sideBarNavigationMenu: Locator;
+  readonly dashboardItem: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -25,6 +31,10 @@ export class LoginPage extends BaseHelpers {
     this.cancelButton = page.locator('button:has-text("Cancel")');
     this.resetPasswordButton = page.getByRole('button', { name: 'Reset Password' });
     this.validateSuccessResetPassword = page.locator('h6:has-text("Reset Password link sent successfully")');
+    this.validateInvalidLogin = page.getByRole('alert');
+    this.invalidForgotPasswordError = page.getByRole('alert');
+    this.sideBarNavigationMenu = page.locator('div.oxd-sidepanel-body ul.oxd-main-menu');
+    this.dashboardItem = page.locator('div.oxd-layout-context');
   }
 
   async goto() {
@@ -53,8 +63,45 @@ export class LoginPage extends BaseHelpers {
     await expect(this.page).toHaveURL(/login/);
   }
 
-  async expectLoggedIn() {
+  async invalidLoginValidation() {
+    await expect(this.validateInvalidLogin).toBeVisible();
+    await expect(this.page).toHaveURL(/login/);
+    await expect(this.username).toHaveValue('');
+    await expect(this.password).toHaveValue('');
+  }
+
+  async expectLoggedInAdmin(testInfo: TestInfo) {
     await expect(this.page).toHaveURL(/dashboard/);
+    await expect(this.dashboardItem).toBeVisible({ timeout: 6000 })
+    await expect(this.sideBarNavigationMenu).toBeVisible({ timeout: 6000 });
+    await this.attachTextsWithExpected(
+      this.sideBarNavigationMenu,
+      testInfo,
+      'Sidebar Menu List',
+      ExpectedSideBarAdmin
+    )
+    await this.attachTexts(
+      this.dashboardItem,
+      testInfo,
+      'Dashboard Text'
+    )
+  }
+
+  async expectLoggedInESS(testInfo: TestInfo) {
+    await expect(this.page).toHaveURL(/dashboard/);
+    await expect(this.dashboardItem).toBeVisible({ timeout: 6000 })
+    await expect(this.sideBarNavigationMenu).toBeVisible({ timeout: 6000 });
+    await this.attachTextsWithExpected(
+      this.sideBarNavigationMenu,
+      testInfo,
+      'Sidebar Menu List',
+      ExpectedSideBarESS
+    )
+    await this.attachTexts(
+      this.dashboardItem,
+      testInfo,
+      'Dashboard Text'
+    )
   }
 
   async checkErrorLabelUsername() {
@@ -67,5 +114,12 @@ export class LoginPage extends BaseHelpers {
 
   async validateResetPassword() {
     await expect(this.validateSuccessResetPassword).toBeVisible();
+    await expect(this.page).toHaveURL(/sendPasswordReset/);
+  }
+
+  async validateInvalidForgotPassword() {
+    await expect(this.page).toHaveURL(/requestPasswordResetCode/);
+    await expect(this.invalidForgotPasswordError).toBeVisible();
+    await expect(this.username).toHaveValue('');
   }
 }

@@ -7,16 +7,23 @@ test('Cancel Forgot Password', async ({ page }) => {
   await login.cancelForgotPassword();
 });
 
-test('Not input Username on forgot password', async ({ page }) => {
+test('Reset password without input username', async ({ page }) => {
   const login = new LoginPage(page);
   await login.goto();
   await login.forgotPassword('');
   await login.checkErrorLabelUsername();
 });
 
-test('Forgot Password', async ({ page }) => {
+test('Reset password with input valid username', async ({ page }) => {
   const login = new LoginPage(page);
   await login.goto();
   await login.forgotPassword('Admin');
   await login.validateResetPassword();
+});
+
+test('Reset password with input invalid username', async ({ page }) => {
+  const login = new LoginPage(page);
+  await login.goto();
+  await login.forgotPassword('AdminInvalid');
+  await login.validateInvalidForgotPassword();
 });
